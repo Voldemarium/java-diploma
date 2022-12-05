@@ -43,16 +43,16 @@ public class Main {
 				System.out.println("str " + i + ", " + suggestListPage);
 
 				if (!suggestListPage.isEmpty() && !createNewPage) {
-					for (int j = 0; j < suggestListPage.size(); j++) {
-						for (int k = 0; k < suggestList.size(); k++) {
-							if (suggestListPage.get(j).equals(suggestList.get(k)) && !boolSuggest[k]) {
-								boolSuggest[k] = true;        //маркер, что такая рекомендация теперь уже есть
+					for (Suggest suggest : suggestListPage) {
+						for (int j = 0; j < suggestList.size(); j++) {
+							if (suggest.equals(suggestList.get(j)) && !boolSuggest[j]) {
+								boolSuggest[j] = true;        //маркер, что такая рекомендация теперь уже есть
 								if (!createNewPage) {
 									var newPage = doc.addNewPage(i + 1);
 									System.out.println("NEW PAGE!!!!!!!");
 									createNewPage = true;
 								}
-								newListSuggest.add(suggestList.get(k));
+								newListSuggest.add(suggest);
 							}
 						}
 					}
@@ -62,6 +62,5 @@ public class Main {
 			}
 			doc.close();
 		}
-
 	}
 }

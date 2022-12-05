@@ -7,13 +7,14 @@ public class LinksSuggester {
     public LinksSuggester(File file) throws IOException, WrongLinksFormatException {
  //       Map<String, String> map = new HashMap<>();
         List <Suggest> suggestList =new ArrayList<>();
-        //извлекаем из файла file лист с рекомендациями
+        //Читаем из файла file рекомендации
         BufferedReader reader= new BufferedReader(new FileReader(file));
         String line = reader.readLine();
         while (line != null) {
             //Проверка на то, что каждая строка состоит из трёх частей
             String[] split = line.split("\t");
             if (split.length != 3) {
+                System.out.printf("length = " + split.length);
                 throw new WrongLinksFormatException("строка состоит не из трёх частей!");
             }
             //заполняем SuggestList
@@ -29,7 +30,15 @@ public class LinksSuggester {
 
     //Метод suggest анализирует переданный текст и возвращает список всех подошедших рекомендаций
     public List<Suggest> suggest(String text) {
-        return null;
+        List<Suggest> suggestListPage  = new ArrayList<>();
+        for (String s : text.split(" ")) {
+            for (Suggest suggest : suggestList) {
+                if (s.equalsIgnoreCase(suggest.getKeyWord())) {
+                    suggestListPage.add(suggest);
+                }
+            }
+        }
+        return suggestListPage ;
     }
 
     @Override

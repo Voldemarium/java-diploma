@@ -1,22 +1,67 @@
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfReader;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor;
+
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class Main {
-    public static void main(String[] args) throws Exception {
-        // создаём конфиг
-        LinksSuggester linksSuggester = new LinksSuggester(new File("data/config"));
-        List<Suggest> suggestList = linksSuggester.getSuggestList();
-        System.out.println(suggestList);
+	public static void main(String[] args) throws Exception {
+		// создаём конфиг
+		LinksSuggester linksSuggester = new LinksSuggester(new File("data/config"));
+		List<Suggest> suggestList = linksSuggester.getSuggestList();
+
+		// перебираем пдфки в data/pdfs
+		var dir = new File("data/pdfs");
+
+		for (var fileIn : Objects.requireNonNull(dir.listFiles())) {
+			// для каждой пдфки создаём новую в data/converted
+			String newName = fileIn.getName().replace(".pdf", " ");
+			var fileOut = new File("data/converted/" + newName + " (ред).pdf");
+			var doc = new PdfDocument(new PdfReader(fileIn), new PdfWriter(fileOut));
+
+			//создадим массив boolean[] для хранения в нем информации, встречалось ли уже ключевое слово в тексте pdf
+			boolean[] boolSuggest = new boolean[suggestList.size()];
 
 
-        // перебираем пдфки в data/pdfs
+			// перебираем страницы pdf
+			boolean createNewPage = false;   //маркер создания новой страницы
 
-        // для каждой пдфки создаём новую в data/converted
+			for (int i = 1; i <= doc.getNumberOfPages(); i++) {
+				//список рекомендаций для вставки
+				List<Suggest> newListSuggest = new ArrayList<>();
 
-        // перебираем страницы pdf
+				if (createNewPage && i < doc.getNumberOfPages()) {
+					i++;                      //если была создана новая страница, переходим на следующую страницу
+					createNewPage = false;
+				}
+				var text = PdfTextExtractor.getTextFromPage(doc.getPage(i));
+				List<Suggest> suggestListPage = linksSuggester.suggest(text);
+				System.out.println("str " + i + ", " + suggestListPage);
 
-        // если в странице есть неиспользованные ключевые слова, создаём новую страницу за ней
+				if (!suggestListPage.isEmpty() && !createNewPage) {
+					for (int j = 0; j < suggestListPage.size(); j++) {
+						for (int k = 0; k < suggestList.size(); k++) {
+							if (suggestListPage.get(j).equals(suggestList.get(k)) && !boolSuggest[k]) {
+								boolSuggest[k] = true;        //маркер, что такая рекомендация теперь уже есть
+								if (!createNewPage) {
+									var newPage = doc.addNewPage(i + 1);
+									System.out.println("NEW PAGE!!!!!!!");
+									createNewPage = true;
+								}
+								newListSuggest.add(suggestList.get(k));
+							}
+						}
+					}
+				}
+				// вставляем туда рекомендуемые ссылки из конфига
+				System.out.println("newListSuggest :" + newListSuggest);
+			}
+			doc.close();
+		}
 
-        // вставляем туда рекомендуемые ссылки из конфига
-    }
+	}
 }

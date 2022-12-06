@@ -1,7 +1,14 @@
+import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfPage;
 import com.itextpdf.kernel.pdf.PdfReader;
 import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.action.PdfAction;
+import com.itextpdf.kernel.pdf.annot.PdfLinkAnnotation;
 import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor;
+import com.itextpdf.layout.Canvas;
+import com.itextpdf.layout.element.Link;
+import com.itextpdf.layout.element.Paragraph;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -25,40 +32,59 @@ public class Main {
 
 			//создадим массив boolean[] для хранения в нем информации, встречалось ли уже ключевое слово в тексте pdf
 			boolean[] boolSuggest = new boolean[suggestList.size()];
-
+			//маркер создания новой страницы
+			boolean createNewPage = false;
 
 			// перебираем страницы pdf
-			boolean createNewPage = false;   //маркер создания новой страницы
-
 			for (int i = 1; i <= doc.getNumberOfPages(); i++) {
-				//список рекомендаций для вставки
-				List<Suggest> newListSuggest = new ArrayList<>();
+				//создаем новую страницу
+				PdfPage newPage = null;
 
+				//если на предыдущей итерации уже была создана новая страница, переходим на следующую страницу
 				if (createNewPage && i < doc.getNumberOfPages()) {
-					i++;                      //если была создана новая страница, переходим на следующую страницу
+					i++;
 					createNewPage = false;
 				}
 				var text = PdfTextExtractor.getTextFromPage(doc.getPage(i));
-				List<Suggest> suggestListPage = linksSuggester.suggest(text);
-				System.out.println("str " + i + ", " + suggestListPage);
 
-				if (!suggestListPage.isEmpty() && !createNewPage) {
-					for (Suggest suggest : suggestListPage) {
+				//Создадим начальный список рекомендаций для вставки в новую страницу
+				List<Suggest> startSuggestList = linksSuggester.suggest(text);
+
+				//Создадим финальный список рекомендаций для вставки в новую страницу
+				List<Suggest> finalSuggestList = new ArrayList<>();
+
+				if (!startSuggestList.isEmpty()) {
+					for (Suggest suggest : startSuggestList) {
 						for (int j = 0; j < suggestList.size(); j++) {
 							if (suggest.equals(suggestList.get(j)) && !boolSuggest[j]) {
-								boolSuggest[j] = true;        //маркер, что такая рекомендация теперь уже есть
+								boolSuggest[j] = true;        //ставим маркер, что такая рекомендация теперь уже есть
 								if (!createNewPage) {
-									var newPage = doc.addNewPage(i + 1);
-									System.out.println("NEW PAGE!!!!!!!");
+									newPage = doc.addNewPage(i + 1);
 									createNewPage = true;
 								}
-								newListSuggest.add(suggest);
+								finalSuggestList.add(suggest);
 							}
 						}
 					}
 				}
-				// вставляем туда рекомендуемые ссылки из конфига
-				System.out.println("newListSuggest :" + newListSuggest);
+				// вставляем в новую страницу рекомендуемые ссылки из финального списка рекомендаций
+				if (newPage != null) {
+					var rect = new Rectangle(newPage.getPageSize()).moveRight(10).moveDown(10);
+					try (Canvas canvas = new Canvas(newPage, rect)) {
+						Paragraph paragraph = new Paragraph("Suggestions:\n");
+						paragraph.setFontSize(25);
+						for (Suggest suggest : finalSuggestList) {
+							paragraph.add(suggest.getTitle() + "\n");
+							PdfLinkAnnotation annotation = new PdfLinkAnnotation(rect);
+							PdfAction action = PdfAction.createURI(suggest.getUrl());
+							annotation.setAction(action);
+							Link link = new Link(suggest.getUrl(), annotation);
+							paragraph.add(link.setUnderline());
+							paragraph.add("\n");
+						}
+						canvas.add(paragraph);
+					}
+				}
 			}
 			doc.close();
 		}

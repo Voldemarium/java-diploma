@@ -70,10 +70,7 @@ public class Main {
 				// вставляем в новую страницу рекомендуемые ссылки из финального списка рекомендаций
 				if (newPage != null) {
 					var rect = new Rectangle(newPage.getPageSize()).moveRight(10).moveDown(10);
-//					try (
-							Canvas canvas = new Canvas(newPage, rect);
-//					)
-//					{
+					try (Canvas canvas = new Canvas(newPage, rect)) {
 						Paragraph paragraph = new Paragraph("Suggestions:\n");
 						paragraph.setFontSize(25);
 						for (Suggest suggest : finalSuggestList) {
@@ -86,7 +83,7 @@ public class Main {
 							paragraph.add("\n");
 						}
 						canvas.add(paragraph);
-	//				}
+					}
 				}
 			}
 			doc.close();

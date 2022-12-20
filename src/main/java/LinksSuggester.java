@@ -31,10 +31,7 @@ public class LinksSuggester {
 	//Метод suggest анализирует переданный текст и возвращает список всех подошедших рекомендаций
 	public List<Suggest> suggest(String text) {
 		List<Suggest> suggestListPage = new ArrayList<>();
-		for (String s : text.split(" ")) {
-			if (s.endsWith(".") || s.endsWith(",") || s.endsWith(";") || s.endsWith(":")) {
-				s = s.substring(0, s.length() - 1);
-			}
+		for (String s : text.split("\\s*(\\s|,|\\.|;|:|-)\\s*")) {
 			for (Suggest suggest : suggestList) {
 				if (s.equalsIgnoreCase(suggest.getKeyWord())) {
 					suggestListPage.add(suggest);

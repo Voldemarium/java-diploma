@@ -14,7 +14,7 @@ public class LinksSuggester {
 			//Проверка на то, что каждая строка состоит из трёх частей
 			String[] split = line.split("\t");
 			if (split.length != 3) {
-				System.out.printf("length = " + split.length);
+				System.out.println("length = " + split.length);
 				throw new WrongLinksFormatException("строка состоит не из трёх частей!");
 			}
 			//заполняем SuggestList
